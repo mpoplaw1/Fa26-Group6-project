@@ -12,11 +12,11 @@ This is our shared fork of the [ENPM611 application template](https://github.com
 | Ashish Bhoya | [11Ashish11](https://github.com/11Ashish11) | Component diagram after changes |
 | Mahima Shenoy | [s-mahima09](https://github.com/s-mahima09) | Component diagram before changes |
 
-Implementation and testing responsibilities will be recorded as the team assigns and completes them.
+Marcin implements and tests Feature 1 (time to closure) and the shared issue helpers. Features 2 and 3 remain for team integration.
 
 ## Current status
 
-The main branch contains the course template, all three Milestone 1 diagrams, and this team README. Feature 0 is the provided example. Features 1, 2, and 3 remain placeholders in run.py; the new analysis modules are planned and have not been implemented on main.
+This version contains the course template, all three Milestone 1 diagrams, shared issue helpers, and Feature 1 (time to closure). Feature 0 remains the provided example. Features 2 and 3 are not implemented in this version; selecting either reports an error instead of silently doing nothing.
 
 Milestone 1 diagrams are available in docs/milestone1 on main and linked below. These describe the existing architecture and planned changes.
 
@@ -32,25 +32,40 @@ The sequence diagram follows `python run.py --feature 2 --user abn`, from config
 
 [Repository URL submission file](docs/milestone1/team_6_repo.txt). GitHub stores the work and review history; required assignment files must also be submitted through Canvas.
 
-## Planned analyses
+## Analyses
 
-These commands describe the intended interface after implementation. They do not yet produce the proposed results on main.
+Feature 1 is implemented below. Features 2 and 3 describe the planned interfaces.
 
 ### Feature 1 Time to closure by area and kind
 
 **Question:** Which issue areas and kinds have the longest median elapsed time to closure?
 
-**Module:** `resolution_time_analysis.py` (planned).
+**Module:** `resolution_time_analysis.py`.
 
 **Method:** For eligible closed issues, calculate days from creation to the final recorded closure. Group by current `area/*` and `kind/*` labels. Exclude bot closures and unusable records with explicit exclusion counts. Report the proportion still open separately.
 
 **Input:** None beyond the feature selection.
 
-**Output:** Sorted horizontal bar chart of median days with sample sizes and a console explanation.
+**Output:** Sorted horizontal bar charts of median days with sample sizes, CSV label statistics, JSON summary and exclusion counts, and a console explanation.
 
 ```bash
 python run.py --feature 1
 ```
+
+By default, files are saved in `outputs/resolution_time/` without opening chart windows:
+
+- `closure_by_area.png` and `.svg`
+- `closure_by_kind.png` and `.svg`
+- `closure_by_label.csv`
+- `summary.json`
+
+Use `python run.py --feature 1 --output-dir outputs/my-run` to select another directory. Add `--show` to display charts on a graphical desktop. The `--user` and `--label` options are reserved for other analyses and do not filter Feature 1.
+
+Elapsed days use UTC timestamps and 86,400 seconds per day; timestamps without a time zone are assumed UTC. Only currently closed issues with a usable final closure are eligible. A reopening at or after the last closure, or an undated closure/reopening, makes the closure unusable. Missing creation dates, missing closing authors, bot final closures, and negative durations are also excluded. A zero-day duration is valid. The bot rule checks a case-insensitive `[bot]` suffix.
+
+Open percentages use all issues in the dataset (or all issues carrying a label for the per-label percentage), not just eligible closed issues. Current duplicate labels are counted once per issue; an issue with several labels contributes to several groups. Eligible issues without `area/` or `kind/` labels are counted separately. Groups with no eligible closures have a blank CSV median and JSON `null`; they are omitted from median bars. Empty datasets still produce tables and placeholder charts. Closure-exclusion subcounts explain `unusable_closure`; they are not additional exclusions.
+
+The JSON report records the dataset path for provenance. Generated reports are ignored by Git; check that path before sharing reports separately.
 
 ### Feature 2 Contributor profile
 
@@ -86,7 +101,7 @@ python run.py --feature 3
 
 ## Setup
 
-Use Python 3 and pip. A tested minimum Python version has not yet been established. Dependencies in `requirements.txt` are python-dateutil, pandas, and matplotlib.
+Use Python 3 and pip. Feature 1 has been tested with Python 3.13 on Windows; a minimum supported version has not been established. Dependencies in `requirements.txt` are python-dateutil, pandas, and matplotlib.
 
 ### Clone the repository
 
@@ -153,15 +168,27 @@ The template prints an event count and displays a bar chart of top issue creator
 
 | File | Responsibility | Status |
 | --- | --- | --- |
-| `run.py` | Parse arguments and dispatch analyses | Existing; features 1-3 need implementation |
+| `run.py` | Parse arguments and dispatch analyses | Features 0 and 1 connected |
 | `config.py` | Settings and argument overrides | Existing |
 | `data_loader.py` | Load and cache Issue objects | Existing |
 | `model.py` | Issue and Event data model | Existing |
 | `example_analysis.py` | Demonstrate analysis and chart output | Existing |
-| `resolution_time_analysis.py` | Feature 1 | Planned |
+| `resolution_time_analysis.py` | Feature 1 | Implemented |
 | `contributor_profile_analysis.py` | Feature 2 | Planned |
 | `response_time_analysis.py` | Feature 3 | Planned |
-| `issue_utils.py` | Shared bot, closure-date and response helpers | Planned |
+| `issue_utils.py` | Shared bot, closure-date and response helpers | Implemented; see [helper contract](SHARED_HELPERS.txt) |
+
+## Testing Feature 1 and shared helpers
+
+After installing the runtime dependencies, run from the repository root:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The 26 tests include 14 closure-analysis tests, 10 shared-helper tests, and two CLI integration tests. Integration tests create temporary synthetic JSON datasets, invoke Feature 1, and check the numerical CSV/JSON results and PNG/SVG artifacts. No course dataset or network access is needed. Coverage includes final closures after reopening, bot closures, UTC offsets, zero and negative durations, missing dates, duplicate labels, open-issue denominators, medians, and empty data.
+
+The inherited loader expects the course JSON schema. Invalid issue states or malformed JSON can stop loading; the CLI reports a failure rather than claiming those records were analyzed. The `unknown_state` unit case exercises the pure calculation with an already constructed object.
 
 ## Interpretation and limitations
 
