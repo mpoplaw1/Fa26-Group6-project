@@ -104,7 +104,10 @@ python run.py --feature 2 --user abn
 **Output:**
 
 - On screen: the question, how it was answered, a table for each year, the five people who replied first most often, and a one-line finding.
-- Saved in `outputs/response_time/`: a line chart (`first_response_by_year.png` and `.svg`) with two lines, typical wait in hours and % with no reply, plus the numbers as `first_response_by_year.csv` and `summary.json`.
+- Saved in `outputs/response_time/`:
+  - `first_response_by_year.png` and `.svg`: a line chart with two lines, typical wait in hours and % with no reply.
+  - `first_response_without_top_responder.png` and `.svg`: a line chart comparing the typical wait with all replies against the wait without that year's top replier. Each year is labeled with that person's name and share of first replies.
+  - The numbers as `first_response_by_year.csv` and `summary.json`.
 
 ```bash
 python run.py --feature 3

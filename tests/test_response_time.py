@@ -101,8 +101,10 @@ class CommandLineTests(unittest.TestCase):
                                   env=env, capture_output=True, text=True, timeout=90)
             self.assertEqual(proc.returncode, 0, proc.stderr)
             data = json.loads((folder / 'out' / 'summary.json').read_text())
-            self.assertTrue((folder / 'out' / 'first_response_by_year.png')
-                            .read_bytes().startswith(b'\x89PNG\r\n\x1a\n'))
+            for chart in ('first_response_by_year', 'first_response_without_top_responder'):
+                self.assertTrue((folder / 'out' / f'{chart}.png')
+                                .read_bytes().startswith(b'\x89PNG\r\n\x1a\n'))
+                self.assertIn('<svg', (folder / 'out' / f'{chart}.svg').read_text())
             return data, proc.stdout
 
     def test_fixture_outputs(self):
