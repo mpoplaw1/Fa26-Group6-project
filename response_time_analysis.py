@@ -144,7 +144,7 @@ def _fmt(value, unit=''):
 class ResponseTimeAnalysis:
     def run(self):
         result = analyze(DataLoader().get_issues())
-        output = Path(config.get_parameter('response_output_dir') or 'outputs/response_time')
+        output = Path(config.get_parameter('output_dir') or 'outputs/response_time')
         output.mkdir(parents=True, exist_ok=True)
         result['dataset'] = str(config.get_parameter('ENPM611_PROJECT_DATA_PATH'))
         (output / 'summary.json').write_text(json.dumps(result, indent=2), encoding='utf-8')

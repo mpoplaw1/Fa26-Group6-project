@@ -110,7 +110,7 @@ python run.py --feature 2 --user abn
 python run.py --feature 3
 ```
 
-Add `--show` to open the chart in a window as well. To save the files somewhere else, set the `response_output_dir` environment variable. You can also run this feature on its own with `python response_time_analysis.py`.
+Add `--show` to open the chart in a window as well. To save the files somewhere else, add `--output-dir <folder>`. You can also run this feature on its own with `python response_time_analysis.py`.
 
 **Finding (full dataset):** The typical wait for a first reply dropped from about 21 hours in 2018 (and 108 hours in 2019) to about 1 hour from 2022 onward. Each year, 7% to 14% of issues got no reply. Since 2023, one volunteer (`dimbleby`) gave about three out of four first replies. Without his replies, the typical wait would be about 10 to 12 hours.
 
@@ -199,7 +199,7 @@ The template prints an event count and displays a bar chart of top issue creator
 | `example_analysis.py` | Demonstrate analysis and chart output | Existing |
 | `resolution_time_analysis.py` | Feature 1 | Implemented |
 | `contributor_profile_analysis.py` | Feature 2 | Planned |
-| `response_time_analysis.py` | Feature 3 | Planned |
+| `response_time_analysis.py` | Feature 3 | Implemented |
 | `issue_utils.py` | Shared bot, closure-date and response helpers | Implemented; see [helper contract](SHARED_HELPERS.txt) |
 
 ## Testing Feature 1 and shared helpers

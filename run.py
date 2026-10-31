@@ -6,10 +6,11 @@ import config
 def main():
     parser = argparse.ArgumentParser(description='Team 6 issue analysis')
     parser.add_argument('--feature', '-f', type=int, required=True,
-                        help='0: template example; 1: time to closure')
+                        help='0: template example; 1: time to closure; 3: time to first response')
     parser.add_argument('--user', '-u')
     parser.add_argument('--label', '-l')
-    parser.add_argument('--output-dir', default='outputs/resolution_time')
+    parser.add_argument('--output-dir', default=None,
+                        help='Folder for saved charts and tables (each feature has its own default)')
     parser.add_argument('--show', action='store_true', help='Also open interactive charts')
     args = parser.parse_args()
     config.overwrite_from_args(args)
@@ -22,8 +23,14 @@ def main():
             ResolutionTimeAnalysis().run()
         except (OSError, ValueError, TypeError, KeyError) as error:
             parser.exit(1, f'Unable to run analysis: {error}\nCheck the dataset path and JSON format.\n')
+    elif args.feature == 3:
+        from response_time_analysis import ResponseTimeAnalysis
+        try:
+            ResponseTimeAnalysis().run()
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            parser.exit(1, f'Unable to run analysis: {error}\nCheck the dataset path and JSON format.\n')
     else:
-        parser.error('Available features: 0 (template example), 1 (time to closure). Features 2 and 3 await team integration.')
+        parser.error('Available features: 0 (template example), 1 (time to closure), 3 (time to first response). Feature 2 awaits team integration.')
 
 
 if __name__ == '__main__':

@@ -95,7 +95,7 @@ class CommandLineTests(unittest.TestCase):
             (folder / 'fixture.json').write_text(json.dumps(records), encoding='utf-8')
             env = os.environ.copy()
             env.update(ENPM611_PROJECT_DATA_PATH=str(folder / 'fixture.json'),
-                       response_output_dir=str(folder / 'out'), MPLBACKEND='Agg')
+                       output_dir=str(folder / 'out'), MPLBACKEND='Agg')
             env.pop('show', None)
             proc = subprocess.run([sys.executable, 'response_time_analysis.py'], cwd=ROOT,
                                   env=env, capture_output=True, text=True, timeout=90)
