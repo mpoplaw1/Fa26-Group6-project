@@ -1,57 +1,30 @@
-
-
-"""
-Starting point of the application. This module is invoked from
-the command line to run the analyses.
-"""
-
+"""Command-line entry point for the Team 6 issue analyses."""
 import argparse
-
 import config
-from example_analysis import ExampleAnalysis
 
 
-def parse_args():
-    """
-    Parses the command line arguments that were provided along
-    with the python command. The --feature flag must be provided as
-    that determines what analysis to run. Optionally, you can pass in
-    a user and/or a label to run analysis focusing on specific issues.
-    
-    You can also add more command line arguments following the pattern
-    below.
-    """
-    ap = argparse.ArgumentParser("run.py")
-    
-    # Required parameter specifying what analysis to run
-    ap.add_argument('--feature', '-f', type=int, required=True,
-                    help='Which of the three features to run')
-    
-    # Optional parameter for analyses focusing on a specific user (i.e., contributor)
-    ap.add_argument('--user', '-u', type=str, required=False,
-                    help='Optional parameter for analyses focusing on a specific user')
-    
-    # Optional parameter for analyses focusing on a specific label
-    ap.add_argument('--label', '-l', type=str, required=False,
-                    help='Optional parameter for analyses focusing on a specific label')
-    
-    return ap.parse_args()
+def main():
+    parser = argparse.ArgumentParser(description='Team 6 issue analysis')
+    parser.add_argument('--feature', '-f', type=int, required=True,
+                        help='0: template example; 1: time to closure')
+    parser.add_argument('--user', '-u')
+    parser.add_argument('--label', '-l')
+    parser.add_argument('--output-dir', default='outputs/resolution_time')
+    parser.add_argument('--show', action='store_true', help='Also open interactive charts')
+    args = parser.parse_args()
+    config.overwrite_from_args(args)
+    if args.feature == 0:
+        from example_analysis import ExampleAnalysis
+        ExampleAnalysis().run()
+    elif args.feature == 1:
+        from resolution_time_analysis import ResolutionTimeAnalysis
+        try:
+            ResolutionTimeAnalysis().run()
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            parser.exit(1, f'Unable to run analysis: {error}\nCheck the dataset path and JSON format.\n')
+    else:
+        parser.error('Available features: 0 (template example), 1 (time to closure). Features 2 and 3 await team integration.')
 
 
-
-# Parse feature to call from command line arguments
-args = parse_args()
-# Add arguments to config so that they can be accessed in other parts of the application
-config.overwrite_from_args(args)
-    
-# Run the feature specified in the --feature flag
-if args.feature == 0:
-    ExampleAnalysis().run()
-elif args.feature == 1:
-    pass # TODO call first analysis
-elif args.feature == 2:
-    pass # TODO call second analysis
-elif args.feature == 3:
-    pass # TODO call third analysis
-else:
-    print('Need to specify which feature to run with --feature flag.')
+if __name__ == '__main__':
+    main()
