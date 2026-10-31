@@ -72,17 +72,41 @@ python run.py --feature 2 --user abn
 
 **Question:** How quickly do issues receive their first response, and how has that changed over time?
 
-**Module:** `response_time_analysis.py` (planned).
+**Module:** `response_time_analysis.py` (class `ResponseTimeAnalysis`).
 
-**Method:** Find the earliest dated non-bot comment by someone other than the issue creator. Calculate elapsed hours and group by issue creation year. Report median time among answered issues and the percentage with no eligible response observed by the dataset cutoff.
+**Method:**
 
-**Input:** None beyond the feature selection.
+- For each issue, find the first reply from someone other than the person who opened it. Bot accounts (names ending in `[bot]`) don't count. This uses `get_first_response()` from `issue_utils.py`.
+- Measure the hours between the issue being opened and that first reply.
+- Group issues by the year they were opened.
+- For each year, show the typical wait (the median) and the share of issues that got no reply.
+- Issues missing an opening date or an author are left out and counted separately. They are not counted as unanswered.
 
-**Output:** Annual response-time and unanswered-share charts with clearly identified units, plus a console summary of leading first responders. The proposal also includes a sensitivity comparison excluding a leading responder's comments; its exact calculation must be agreed before implementation.
+**Extra check:** For each year, the analysis names the person who replied first most often. It then works out what the typical wait would have been without their replies. This shows how much the project depends on one person. The original data is not changed.
+
+**Input:** None. Just run the command.
+
+**Output:**
+
+- On screen: the question, how it was answered, a table for each year, the five people who replied first most often, and a one-line finding.
+- Saved in `outputs/response_time/`: a line chart (`first_response_by_year.png` and `.svg`) with two lines, typical wait in hours and % with no reply, plus the numbers as `first_response_by_year.csv` and `summary.json`.
 
 ```bash
 python run.py --feature 3
 ```
+
+Add `--show` to open the chart in a window as well. To save the files somewhere else, set the `response_output_dir` environment variable. You can also run this feature on its own with `python response_time_analysis.py`.
+
+**Finding (full dataset):** The typical wait for a first reply dropped from about 21 hours in 2018 (and 108 hours in 2019) to about 1 hour from 2022 onward. Each year, 7% to 14% of issues got no reply. Since 2023, one volunteer (`dimbleby`) gave about three out of four first replies. Without his replies, the typical wait would be about 10 to 12 hours.
+
+**Limitations:**
+
+- Any comment counts as a reply, even if it doesn't help.
+- 2024 is only a partial year, and newer issues have had less time to get a reply.
+- Bots are spotted by name only, so some may be missed.
+- The "without the top replier" number shows how much the project relies on that person. It does not prove what would have happened without them.
+
+Tests: `python -m unittest tests.test_response_time -v`
 
 ## Setup
 
