@@ -8,7 +8,7 @@ This is our shared fork of the [ENPM611 application template](https://github.com
 
 | Member | GitHub | Milestone 1 responsibility |
 | --- | --- | --- |
-| Marcin | [mpoplaw1](https://github.com/mpoplaw1) | Sequence diagram and repository |
+| Marcin Poplawski | [mpoplaw1](https://github.com/mpoplaw1) | Sequence diagram and repository |
 | Ashish Bhoya | [11Ashish11](https://github.com/11Ashish11) | Component diagram after changes |
 | Mahima Shenoy | [s-mahima09](https://github.com/s-mahima09) | Component diagram before changes |
 
