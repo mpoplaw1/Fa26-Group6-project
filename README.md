@@ -16,17 +16,17 @@ Implementation and testing responsibilities will be recorded as the team assigns
 
 ## Current status
 
-The main branch currently contains the original template. Feature 0 is the provided example. Features 1, 2, and 3 remain placeholders in run.py; the new analysis modules are planned and have not been implemented on main.
+The main branch contains the course template, all three Milestone 1 diagrams, and this team README. Feature 0 is the provided example. Features 1, 2, and 3 remain placeholders in run.py; the new analysis modules are planned and have not been implemented on main.
 
-Milestone 1 diagrams are available on the design branches linked below. These describe the existing architecture and planned changes.
+Milestone 1 diagrams are available in docs/milestone1 on main and linked below. These describe the existing architecture and planned changes.
 
 ## Milestone 1 Design
 
 | Artifact | Mermaid source | Image |
 | --- | --- | --- |
-| Component diagram before changes | [TXT](https://github.com/mpoplaw1/Fa26-Group6-project/blob/milestone1-component-before/docs/milestone1/team_6_component_diagram_before.txt) | [SVG](https://github.com/mpoplaw1/Fa26-Group6-project/blob/milestone1-component-before/docs/milestone1/team_6_component_diagram_before.svg) |
-| Component diagram after changes | [TXT](https://github.com/mpoplaw1/Fa26-Group6-project/blob/milestone1-component-after/docs/milestone1/team_6_component_diagram_after.txt) | [SVG](https://github.com/mpoplaw1/Fa26-Group6-project/blob/milestone1-component-after/docs/milestone1/team_6_component_diagram_after.svg) |
-| Contributor profile sequence diagram | [TXT](https://github.com/mpoplaw1/Fa26-Group6-project/blob/codex/milestone1-sequence/docs/milestone1/team_6_sequence_diagram.txt) | [SVG](https://github.com/mpoplaw1/Fa26-Group6-project/blob/codex/milestone1-sequence/docs/milestone1/team_6_sequence_diagram.svg) |
+| Component diagram before changes | [TXT](docs/milestone1/team_6_component_diagram_before.txt) | [SVG](docs/milestone1/team_6_component_diagram_before.svg) |
+| Component diagram after changes | [TXT](docs/milestone1/team_6_component_diagram_after.txt) | [SVG](docs/milestone1/team_6_component_diagram_after.svg) |
+| Contributor profile sequence diagram | [TXT](docs/milestone1/team_6_sequence_diagram.txt) | [SVG](docs/milestone1/team_6_sequence_diagram.svg) |
 
 The sequence diagram follows `python run.py --feature 2 --user abn`, from configuration and data loading through contributor comparison and output.
 
@@ -179,4 +179,4 @@ Create a branch for each independent change, commit meaningful work, and open a 
 
 Keep datasets, virtual environments, credentials, personal configuration, and temporary outputs out of Git. Keep Mermaid sources and required SVG design deliverables together.
 
-The inherited `.github/workflows/auto-close-pr.yml` is configured to close pull requests opened by anyone other than the repository owner if the workflow is enabled. Review this template workflow before relying on teammate pull requests.
+The inherited auto-close workflow is restricted to the original course repository and does not close pull requests in this team fork.

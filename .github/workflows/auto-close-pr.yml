@@ -9,6 +9,7 @@ permissions:
 
 jobs:
   close-pr:
+    if: github.repository == 'enpm611/project-application-template'
     runs-on: ubuntu-latest
     steps:
       - name: Close PR (except owner)
