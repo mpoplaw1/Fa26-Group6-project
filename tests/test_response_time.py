@@ -87,6 +87,24 @@ class FirstResponseTests(unittest.TestCase):
         analyze([obj])
         self.assertEqual(len(obj.events), 1)
 
+    def test_username_capitalization_counts_as_one_person(self):
+        # "Helper" and "helper" are the same GitHub account.
+        result = analyze([issue(events=[comment('2024-01-01T01:00:00Z', 'Helper')]),
+                          issue(events=[comment('2024-01-01T02:00:00Z', 'helper')])])
+        row = result['years'][0]
+        self.assertEqual(row['top_responder'], 'Helper')
+        self.assertEqual(row['top_responder_share_percent'], 100)
+        self.assertEqual(result['top_responders'], [('Helper', 2)])
+
+    def test_without_top_removes_every_spelling(self):
+        issues = [issue(events=[comment('2024-01-01T01:00:00Z', 'Helper'),
+                                comment('2024-01-01T09:00:00Z', 'other')]),
+                  issue(events=[comment('2024-01-01T02:00:00Z', 'HELPER'),
+                                comment('2024-01-01T05:00:00Z', 'helper')])]
+        row = analyze(issues)['years'][0]
+        self.assertEqual(row['top_responder_share_percent'], 100)
+        self.assertEqual(row['median_hours_without_top'], 9)
+
 
 class CommandLineTests(unittest.TestCase):
     def run_module(self, records):

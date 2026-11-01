@@ -54,15 +54,25 @@ def analyze(issues):
         counts['answered' if response else 'unanswered'] += 1
         by_year[created.year].append((issue, response))
 
+    # GitHub usernames ignore capital letters, so "Helper" and "helper" are the
+    # same person. Count by a lower-case key and show the first spelling seen.
+    display_names = {}
+
+    def person(author):
+        key = author.casefold()
+        display_names.setdefault(key, author)
+        return key
+
     rows = []
     overall_responders = Counter()
     for year in sorted(by_year):
         pairs = by_year[year]
         hours = [_hours_between(utc_date(i.created_date), utc_date(r.event_date))
                  for i, r in pairs if r is not None]
-        responders = Counter(r.author for _, r in pairs if r is not None)
+        responders = Counter(person(r.author) for _, r in pairs if r is not None)
         overall_responders.update(responders)
-        top, top_count = responders.most_common(1)[0] if responders else (None, 0)
+        top_key, top_count = responders.most_common(1)[0] if responders else (None, 0)
+        top = display_names.get(top_key)
 
         # Sensitivity check: what would the median be if the year's leading
         # first responder had not commented? Recomputed on a filtered view.
@@ -89,7 +99,8 @@ def analyze(issues):
     counts['unanswered_percent'] = (100 * counts['unanswered'] / counts['eligible']
                                     if counts['eligible'] else 0)
     return dict(summary=dict(counts), years=rows,
-                top_responders=overall_responders.most_common(5))
+                top_responders=[(display_names[key], count)
+                                for key, count in overall_responders.most_common(5)])
 
 
 def save_chart(rows, output, show=False):
