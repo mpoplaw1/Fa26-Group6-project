@@ -12,11 +12,11 @@ This is our shared fork of the [ENPM611 application template](https://github.com
 | Ashish Bhoya | [11Ashish11](https://github.com/11Ashish11) | Component diagram after changes |
 | Mahima Shenoy | [s-mahima09](https://github.com/s-mahima09) | Component diagram before changes |
 
-Marcin implements and tests Feature 1 (time to closure) and the shared issue helpers. Features 2 and 3 remain for team integration.
+Marcin implements and tests Feature 1 (time to closure) and the shared issue helpers. Ashish implements and tests Feature 2 (contributor profile over time). Feature 3 remains for team integration.
 
 ## Current status
 
-This version contains the course template, all three Milestone 1 diagrams, shared issue helpers, and Feature 1 (time to closure). Feature 0 remains the provided example. Features 2 and 3 are not implemented in this version; selecting either reports an error instead of silently doing nothing.
+This version contains the course template, all three Milestone 1 diagrams, shared issue helpers, Feature 1 (time to closure), and Feature 2 (contributor profile over time). Feature 0 remains the provided example. Feature 3 is not implemented in this version; selecting it reports an error instead of silently doing nothing.
 
 Milestone 1 diagrams are available in docs/milestone1 on main and linked below. These describe the existing architecture and planned changes.
 
@@ -34,7 +34,7 @@ The sequence diagram follows `python run.py --feature 2 --user abn`, from config
 
 ## Analyses
 
-Feature 1 is implemented below. Features 2 and 3 describe the planned interfaces.
+Features 1 and 2 are implemented below. Feature 3 describes the planned interface.
 
 ### Feature 1 Time to closure by area and kind
 
@@ -67,21 +67,59 @@ Open percentages use all issues in the dataset (or all issues carrying a label f
 
 The JSON report records the dataset path for provenance. Generated reports are ignored by Git; check that path before sharing reports separately.
 
-### Feature 2 Contributor profile
+### Feature 2 Contributor profile over time
 
-**Question:** How does a contributor's activity mix compare with the most active non-bot contributors?
+**Question:** What does a given contributor do on Poetry's issues, how has that changed year by year, and where do they fit in the history of who did the project's triage work?
 
-**Module:** `contributor_profile_analysis.py` (planned).
+**Module:** `contributor_profile_analysis.py` (class `ContributorProfileAnalysis`).
 
-**Method:** Collect the selected user's events, calculate event-type percentages, and compare with the pooled activity of the top 10 active non-bot contributors. Summarize issue areas in which the user participates.
-
-**Input:** GitHub username through `--user`.
-
-**Output:** Stacked percentage bars and a console summary. Unknown users receive a no-activity message. Bot users may be inspected but are excluded from the baseline.
+**Input:** a GitHub username through `--user`. Matching is case-insensitive (GitHub usernames are), so `--user ABN` and `--user abn` give the same result.
 
 ```bash
 python run.py --feature 2 --user abn
 ```
+
+**Method:**
+
+1. Keep only *active* events: a known author and a valid date. `mentioned`, `subscribed` and `unsubscribed` are excluded because GitHub records the person who was tagged or auto-subscribed as their author, not someone who acted. (In the full dataset, 96% of `mentioned` authors appear as an `@username` in that issue's text or comments.) Exclusion counts are printed.
+2. **Project view:** for each year (UTC), take all `labeled`, `unlabeled` and `closed` events by non-bot accounts ("triage actions") and compute each person's share. The requested user is highlighted, and the top person's share is shown above each year.
+3. **User view:** the requested user's event mix per year (`commented`, `labeled`, `unlabeled`, `closed`, everything else as `other`), with the event count for each year.
+4. **Pooled comparison:** the user's all-years mix against the combined events of the 10 most active *other* non-bot contributors.
+5. **Areas:** the `area/*` labels on issues the user was active on, counting each issue once per label.
+
+**Output:**
+
+- A console report: the pooled mix vs baseline, a year-by-year table (events, main activity, the user's triage share, that year's top triager), top areas, and exclusion counts.
+- A three-panel chart saved to `outputs/contributor_profile/contributor_profile_<user>.png`. Use `--output-dir <folder>` to save it elsewhere, and add `--show` to also open it on a graphical desktop.
+
+**Example finding (full dataset):** the top triager's share fell from 76% (sdispater, 2018) to 16% (2024), so triage work became spread across more people over time. `abn` shifted from mostly commenting (2020–21) to mostly removing labels (2022, 2024), with no active events in 2023, a change that a single all-years average hides.
+
+**Edge cases:**
+
+| Input | Behavior |
+| --- | --- |
+| No `--user` | Prints usage and exits normally |
+| Unknown user | Prints "No activity found" and suggests the 5 most active non-bot contributors |
+| Numeric or JSON-like names (`--user 12345`, `--user true`) | The configuration system decodes these; the analysis restores the typed string. `--user null` cannot be distinguished from a missing value and is treated as missing |
+| Bot account (`--user "github-actions[bot]"`) | Profiled and labeled as automation; bots never appear in the triage shares or the baseline |
+| Year with no activity by the user | Shown as an empty bar with `n=0` |
+| Events with no author or no date | Excluded and counted in the report |
+
+**Tests:**
+
+```bash
+python -m unittest discover -s tests -p "test_contributor*" -v
+```
+
+19 tests cover username normalization, passive/undated/authorless exclusions, case-insensitive matching, pooled percentages, baseline selection (bots and the requested user excluded, ties broken by name, capped at 10), per-year triage shares, zero-activity years, UTC year boundaries, bot users, area counting, chart output, the default and `--output-dir` output folders, and end-to-end runs for known, unknown and missing users using a temporary synthetic dataset.
+
+**Limitations:**
+
+- Triage share counts actions, not effort: removing a label and resolving a hard issue each count once.
+- The baseline is the most active accounts, not a verified maintainer list.
+- Area labels are the issue's current labels, which may differ from its labels when the user was active.
+- The bot rule is the shared `[bot]`-suffix heuristic from `issue_utils.is_bot`.
+- The final year in the dataset may be partial (the full dataset ends in October 2024) and is marked with `*`.
 
 ### Feature 3 Time to first response by year
 
@@ -168,17 +206,17 @@ The template prints an event count and displays a bar chart of top issue creator
 
 | File | Responsibility | Status |
 | --- | --- | --- |
-| `run.py` | Parse arguments and dispatch analyses | Features 0 and 1 connected |
+| `run.py` | Parse arguments and dispatch analyses | Features 0, 1 and 2 connected |
 | `config.py` | Settings and argument overrides | Existing |
 | `data_loader.py` | Load and cache Issue objects | Existing |
 | `model.py` | Issue and Event data model | Existing |
 | `example_analysis.py` | Demonstrate analysis and chart output | Existing |
 | `resolution_time_analysis.py` | Feature 1 | Implemented |
-| `contributor_profile_analysis.py` | Feature 2 | Planned |
+| `contributor_profile_analysis.py` | Feature 2 | Implemented |
 | `response_time_analysis.py` | Feature 3 | Planned |
 | `issue_utils.py` | Shared bot, closure-date and response helpers | Implemented; see [helper contract](SHARED_HELPERS.txt) |
 
-## Testing Feature 1 and shared helpers
+## Testing Features 1 and 2 and shared helpers
 
 After installing the runtime dependencies, run from the repository root:
 
@@ -187,6 +225,8 @@ python -m unittest discover -s tests -v
 ```
 
 The 26 tests include 14 closure-analysis tests, 10 shared-helper tests, and two CLI integration tests. Integration tests create temporary synthetic JSON datasets, invoke Feature 1, and check the numerical CSV/JSON results and PNG/SVG artifacts. No course dataset or network access is needed. Coverage includes final closures after reopening, bot closures, UTC offsets, zero and negative durations, missing dates, duplicate labels, open-issue denominators, medians, and empty data.
+
+Feature 2 adds 19 tests in `tests/test_contributor_profile_analysis.py` (described under Feature 2 above), bringing the suite to 45 tests.
 
 The inherited loader expects the course JSON schema. Invalid issue states or malformed JSON can stop loading; the CLI reports a failure rather than claiming those records were analyzed. The `unknown_state` unit case exercises the pure calculation with an already constructed object.
 
@@ -198,7 +238,7 @@ The inherited loader expects the course JSON schema. Invalid issue states or mal
 - The top 10 active contributors are an activity-based comparison group, not a verified maintainer list. Event types alone do not establish whether comments are answers or questions.
 - Unanswered means no eligible response observed within the dataset. Recent issues have shorter observation periods, and 2024 is a partial year in the supplied data.
 - Removing one contributor's comments is a sensitivity analysis, not proof of what would happen if that person left.
-- Configuration parsing can convert usernames such as `null` and `true` into other types. Feature 2 must preserve the original username string when implemented.
+- Configuration parsing can convert usernames such as `12345` and `true` into other types. Feature 2 restores the typed string; `--user null` cannot be distinguished from a missing value and is treated as missing.
 
 ## Team workflow
 
