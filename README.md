@@ -233,7 +233,7 @@ The template prints an event count and displays a bar chart of top issue creator
 
 | File | Responsibility | Status |
 | --- | --- | --- |
-| `run.py` | Parse arguments and dispatch analyses | Features 0, 1 and 2 connected |
+| `run.py` | Parse arguments and dispatch analyses | Features 0, 1, 2 and 3 connected |
 | `config.py` | Settings and argument overrides | Existing |
 | `data_loader.py` | Load and cache Issue objects | Existing |
 | `model.py` | Issue and Event data model | Existing |
@@ -276,3 +276,19 @@ Create a branch for each independent change, commit meaningful work, and open a 
 Keep datasets, virtual environments, credentials, personal configuration, and temporary outputs out of Git. Keep Mermaid sources and required SVG design deliverables together.
 
 The inherited auto-close workflow is restricted to the original course repository and does not close pull requests in this team fork.
+
+## Milestone 2 full-dataset verification
+
+The November 1, 2026 check of implementation commit `47a866d` passed all three features on `poetry_issues_all.json` (5,573 issues), plus all 65 automated tests. See the [verification report](docs/milestone2/verification.md) for results, regression checks, and scope.
+
+After completing Setup and configuring the full dataset in the same terminal, run from the repository root:
+
+```powershell
+$env:MPLBACKEND = "Agg"
+python run.py --feature 1 --output-dir outputs/verification/feature1
+python run.py --feature 2 --user abn --output-dir outputs/verification/feature2
+python run.py --feature 3 --output-dir outputs/verification/feature3
+python -m unittest discover -s tests -v
+```
+
+`Agg` saves charts without opening chart windows. Feature 2 is exercised with the dataset contributor `abn`. Each feature should finish without a traceback and save its outputs under the specified folder. The recorded test suite ends with `Ran 65 tests` and `OK`; the tests use synthetic data, independently of the full-dataset runs. Keep generated outputs and the course dataset local.
