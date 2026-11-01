@@ -333,7 +333,7 @@ class ContributorProfileAnalysis:
                 print(f"Try one of the most active contributors: {', '.join(result['suggestions'])}")
             return result
         print_report(result)
-        output = Path(config.get_parameter('contributor_output_dir') or DEFAULT_OUTPUT_DIR)
+        output = Path(config.get_parameter('output_dir') or DEFAULT_OUTPUT_DIR)
         path = save_chart(result, output, bool(config.get_parameter('show')))
         print(f"\nSaved chart to {path.resolve()}")
         return result

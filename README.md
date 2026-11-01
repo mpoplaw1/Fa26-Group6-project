@@ -90,7 +90,7 @@ python run.py --feature 2 --user abn
 **Output:**
 
 - A console report: the pooled mix vs baseline, a year-by-year table (events, main activity, the user's triage share, that year's top triager), top areas, and exclusion counts.
-- A three-panel chart saved to `outputs/contributor_profile/contributor_profile_<user>.png`. Add `--show` to also open it on a graphical desktop.
+- A three-panel chart saved to `outputs/contributor_profile/contributor_profile_<user>.png`. Use `--output-dir <folder>` to save it elsewhere, and add `--show` to also open it on a graphical desktop.
 
 **Example finding (full dataset):** the top triager's share fell from 76% (sdispater, 2018) to 16% (2024), so triage work became spread across more people over time. `abn` shifted from mostly commenting (2020–21) to mostly removing labels (2022, 2024), with no active events in 2023, a change that a single all-years average hides.
 
@@ -111,7 +111,7 @@ python run.py --feature 2 --user abn
 python -m unittest discover -s tests -p "test_contributor*" -v
 ```
 
-18 tests cover username normalization, passive/undated/authorless exclusions, case-insensitive matching, pooled percentages, baseline selection (bots and the requested user excluded, ties broken by name, capped at 10), per-year triage shares, zero-activity years, UTC year boundaries, bot users, area counting, chart output, and end-to-end runs for known, unknown and missing users using a temporary synthetic dataset.
+19 tests cover username normalization, passive/undated/authorless exclusions, case-insensitive matching, pooled percentages, baseline selection (bots and the requested user excluded, ties broken by name, capped at 10), per-year triage shares, zero-activity years, UTC year boundaries, bot users, area counting, chart output, the default and `--output-dir` output folders, and end-to-end runs for known, unknown and missing users using a temporary synthetic dataset.
 
 **Limitations:**
 
@@ -226,7 +226,7 @@ python -m unittest discover -s tests -v
 
 The 26 tests include 14 closure-analysis tests, 10 shared-helper tests, and two CLI integration tests. Integration tests create temporary synthetic JSON datasets, invoke Feature 1, and check the numerical CSV/JSON results and PNG/SVG artifacts. No course dataset or network access is needed. Coverage includes final closures after reopening, bot closures, UTC offsets, zero and negative durations, missing dates, duplicate labels, open-issue denominators, medians, and empty data.
 
-Feature 2 adds 18 tests in `tests/test_contributor_profile_analysis.py` (described under Feature 2 above), bringing the suite to 44 tests.
+Feature 2 adds 19 tests in `tests/test_contributor_profile_analysis.py` (described under Feature 2 above), bringing the suite to 45 tests.
 
 The inherited loader expects the course JSON schema. Invalid issue states or malformed JSON can stop loading; the CLI reports a failure rather than claiming those records were analyzed. The `unknown_state` unit case exercises the pure calculation with an already constructed object.
 

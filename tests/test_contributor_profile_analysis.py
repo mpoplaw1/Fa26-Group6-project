@@ -142,7 +142,7 @@ class ChartTests(unittest.TestCase):
 class RunTests(unittest.TestCase):
     """Runs the class end to end in a subprocess with a temporary JSON dataset."""
 
-    def run_feature(self, user):
+    def run_feature(self, user, output_dir=True):
         records = [dict(state='closed', created_date='2022-01-01T00:00:00Z', labels=['area/cli'],
                         events=[dict(event_type='closed', author='abn', event_date='2022-02-01T00:00:00Z'),
                                 dict(event_type='commented', author='dev', event_date='2022-01-02T00:00:00Z')])]
@@ -150,17 +150,22 @@ class RunTests(unittest.TestCase):
             source = Path(folder) / 'fixture.json'
             source.write_text(json.dumps(records), encoding='utf-8')
             env = os.environ.copy()
-            env.update(ENPM611_PROJECT_DATA_PATH=str(source), MPLBACKEND='Agg',
-                       contributor_output_dir=str(Path(folder) / 'out'))
-            env.pop('show', None)
-            env.pop('user', None)
+            env.update(ENPM611_PROJECT_DATA_PATH=str(source), MPLBACKEND='Agg', PYTHONPATH=str(ROOT))
+            for name in ('show', 'user', 'output_dir'):
+                env.pop(name, None)
+            if output_dir:
+                env['output_dir'] = str(Path(folder) / 'out')
             if user is not None:
                 env['user'] = user
             proc = subprocess.run(
                 [sys.executable, '-c',
                  'from contributor_profile_analysis import ContributorProfileAnalysis as C; C().run()'],
-                cwd=ROOT, env=env, capture_output=True, text=True, timeout=90)
-            charts = list((Path(folder) / 'out').glob('*.png'))
+                # Without --output-dir, run in the temp folder so the default
+                # outputs/contributor_profile/ folder is not created in the repo.
+                cwd=ROOT if output_dir else folder, env=env, capture_output=True,
+                text=True, timeout=90)
+            charts = list((Path(folder) / 'out').glob('*.png')) + list(
+                (Path(folder) / 'outputs' / 'contributor_profile').glob('*.png'))
         self.assertEqual(proc.returncode, 0, proc.stderr)
         return proc.stdout, charts
 
@@ -168,6 +173,11 @@ class RunTests(unittest.TestCase):
         out, charts = self.run_feature('ABN')
         self.assertIn('Contributor profile: abn', out)
         self.assertIn('area/cli: 1', out)
+        self.assertEqual(len(charts), 1)
+
+    def test_default_output_folder_without_output_dir(self):
+        out, charts = self.run_feature('abn', output_dir=False)
+        self.assertIn('outputs/contributor_profile/contributor_profile_abn.png', out.replace('\\', '/'))
         self.assertEqual(len(charts), 1)
 
     def test_missing_user_prints_usage(self):

@@ -9,7 +9,8 @@ def main():
                         help='0: template example; 1: time to closure; 2: contributor profile')
     parser.add_argument('--user', '-u', help='GitHub username for feature 2')
     parser.add_argument('--label', '-l')
-    parser.add_argument('--output-dir', default='outputs/resolution_time')
+    parser.add_argument('--output-dir', default=None,
+                        help='Folder for saved charts and tables (each feature has its own default)')
     parser.add_argument('--show', action='store_true', help='Also open interactive charts')
     args = parser.parse_args()
     config.overwrite_from_args(args)
