@@ -12,11 +12,11 @@ This is our shared fork of the [ENPM611 application template](https://github.com
 | Ashish Bhoya | [11Ashish11](https://github.com/11Ashish11) | Component diagram after changes |
 | Mahima Shenoy | [s-mahima09](https://github.com/s-mahima09) | Component diagram before changes |
 
-Marcin implements and tests Feature 1 (time to closure) and the shared issue helpers. Ashish implements and tests Feature 2 (contributor profile over time). Feature 3 remains for team integration.
+Marcin implements and tests Feature 1 (time to closure) and the shared issue helpers. Ashish implements and tests Feature 2 (contributor profile over time). Mahima implements and tests Feature 3 (time to first response).
 
 ## Current status
 
-This version contains the course template, all three Milestone 1 diagrams, shared issue helpers, Feature 1 (time to closure), and Feature 2 (contributor profile over time). Feature 0 remains the provided example. Feature 3 is not implemented in this version; selecting it reports an error instead of silently doing nothing.
+This version contains the course template, all three Milestone 1 diagrams, shared issue helpers, Feature 1 (time to closure), Feature 2 (contributor profile over time), and Feature 3 (time to first response). Feature 0 remains the provided example.
 
 Milestone 1 diagrams are available in docs/milestone1 on main and linked below. These describe the existing architecture and planned changes.
 
@@ -34,7 +34,7 @@ The sequence diagram follows `python run.py --feature 2 --user abn`, from config
 
 ## Analyses
 
-Features 1 and 2 are implemented below. Feature 3 describes the planned interface.
+Features 1, 2 and 3 are implemented below.
 
 ### Feature 1 Time to closure by area and kind
 
@@ -125,17 +125,44 @@ python -m unittest discover -s tests -p "test_contributor*" -v
 
 **Question:** How quickly do issues receive their first response, and how has that changed over time?
 
-**Module:** `response_time_analysis.py` (planned).
+**Module:** `response_time_analysis.py` (class `ResponseTimeAnalysis`).
 
-**Method:** Find the earliest dated non-bot comment by someone other than the issue creator. Calculate elapsed hours and group by issue creation year. Report median time among answered issues and the percentage with no eligible response observed by the dataset cutoff.
+**Method:**
 
-**Input:** None beyond the feature selection.
+- For each issue, find the first reply from someone other than the person who opened it. Bot accounts (names ending in `[bot]`) don't count. This uses `get_first_response()` from `issue_utils.py`.
+- Measure the hours between the issue being opened and that first reply.
+- Group issues by the year they were opened.
+- For each year, show the typical wait (the median) and the share of issues that got no reply.
+- Issues missing an opening date or an author are left out and counted separately. They are not counted as unanswered.
 
-**Output:** Annual response-time and unanswered-share charts with clearly identified units, plus a console summary of leading first responders. The proposal also includes a sensitivity comparison excluding a leading responder's comments; its exact calculation must be agreed before implementation.
+**Extra check:** For each year, the analysis names the person who replied first most often. It then works out what the typical wait would have been without their replies. This shows how much the project depends on one person. The original data is not changed.
+
+**Input:** None. Just run the command.
+
+**Output:**
+
+- On screen: the question, how it was answered, a table for each year, the five people who replied first most often, and a one-line finding.
+- Saved in `outputs/response_time/`:
+  - `first_response_by_year.png` and `.svg`: a line chart with two lines, typical wait in hours and % with no reply.
+  - `first_response_without_top_responder.png` and `.svg`: a line chart comparing the typical wait with all replies against the wait without that year's top replier. Each year is labeled with that person's name and share of first replies.
+  - The numbers as `first_response_by_year.csv` and `summary.json`.
 
 ```bash
 python run.py --feature 3
 ```
+
+Add `--show` to open the chart in a window as well. To save the files somewhere else, add `--output-dir <folder>`. You can also run this feature on its own with `python response_time_analysis.py`.
+
+**Finding (full dataset):** The typical wait for a first reply dropped from about 21 hours in 2018 (and 108 hours in 2019) to about 1 hour from 2022 onward. Each year, 7% to 14% of issues got no reply. Since 2023, one volunteer (`dimbleby`) gave about three out of four first replies. Without his replies, the typical wait would be about 10 to 12 hours.
+
+**Limitations:**
+
+- Any comment counts as a reply, even if it doesn't help.
+- 2024 is only a partial year, and newer issues have had less time to get a reply.
+- Bots are spotted by name only, so some may be missed.
+- The "without the top replier" number shows how much the project relies on that person. It does not prove what would have happened without them.
+
+Tests: `python -m unittest tests.test_response_time -v`
 
 ## Setup
 
@@ -206,17 +233,17 @@ The template prints an event count and displays a bar chart of top issue creator
 
 | File | Responsibility | Status |
 | --- | --- | --- |
-| `run.py` | Parse arguments and dispatch analyses | Features 0, 1 and 2 connected |
+| `run.py` | Parse arguments and dispatch analyses | Features 0, 1, 2 and 3 connected |
 | `config.py` | Settings and argument overrides | Existing |
 | `data_loader.py` | Load and cache Issue objects | Existing |
 | `model.py` | Issue and Event data model | Existing |
 | `example_analysis.py` | Demonstrate analysis and chart output | Existing |
 | `resolution_time_analysis.py` | Feature 1 | Implemented |
 | `contributor_profile_analysis.py` | Feature 2 | Implemented |
-| `response_time_analysis.py` | Feature 3 | Planned |
+| `response_time_analysis.py` | Feature 3 | Implemented |
 | `issue_utils.py` | Shared bot, closure-date and response helpers | Implemented; see [helper contract](SHARED_HELPERS.txt) |
 
-## Testing Features 1 and 2 and shared helpers
+## Testing Features 1, 2 and 3 and shared helpers
 
 After installing the runtime dependencies, run from the repository root:
 
@@ -227,6 +254,8 @@ python -m unittest discover -s tests -v
 The 26 tests include 14 closure-analysis tests, 10 shared-helper tests, and two CLI integration tests. Integration tests create temporary synthetic JSON datasets, invoke Feature 1, and check the numerical CSV/JSON results and PNG/SVG artifacts. No course dataset or network access is needed. Coverage includes final closures after reopening, bot closures, UTC offsets, zero and negative durations, missing dates, duplicate labels, open-issue denominators, medians, and empty data.
 
 Feature 2 adds 19 tests in `tests/test_contributor_profile_analysis.py` (described under Feature 2 above), bringing the suite to 45 tests.
+
+Feature 3 adds 20 tests in `tests/test_response_time.py`, bringing the suite to 65 tests. They cover bot and creator replies, earliest-reply selection, usernames that differ only in capital letters, grouping by the year an issue was opened, time zones, missing dates and creators, years with no replies, 0-hour replies, the "without the top replier" check, empty data, and both saved charts.
 
 The inherited loader expects the course JSON schema. Invalid issue states or malformed JSON can stop loading; the CLI reports a failure rather than claiming those records were analyzed. The `unknown_state` unit case exercises the pure calculation with an already constructed object.
 
@@ -247,3 +276,19 @@ Create a branch for each independent change, commit meaningful work, and open a 
 Keep datasets, virtual environments, credentials, personal configuration, and temporary outputs out of Git. Keep Mermaid sources and required SVG design deliverables together.
 
 The inherited auto-close workflow is restricted to the original course repository and does not close pull requests in this team fork.
+
+## Milestone 2 full-dataset verification
+
+The November 1, 2026 check of implementation commit `47a866d` passed all three features on `poetry_issues_all.json` (5,573 issues), plus all 65 automated tests. See the [verification report](docs/milestone2/verification.md) for results, regression checks, and scope.
+
+After completing Setup and configuring the full dataset in the same terminal, run from the repository root:
+
+```powershell
+$env:MPLBACKEND = "Agg"
+python run.py --feature 1 --output-dir outputs/verification/feature1
+python run.py --feature 2 --user abn --output-dir outputs/verification/feature2
+python run.py --feature 3 --output-dir outputs/verification/feature3
+python -m unittest discover -s tests -v
+```
+
+`Agg` saves charts without opening chart windows. Feature 2 is exercised with the dataset contributor `abn`. Each feature should finish without a traceback and save its outputs under the specified folder. The recorded test suite ends with `Ran 65 tests` and `OK`; the tests use synthetic data, independently of the full-dataset runs. Keep generated outputs and the course dataset local.

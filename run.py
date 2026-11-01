@@ -6,7 +6,7 @@ import config
 def main():
     parser = argparse.ArgumentParser(description='Team 6 issue analysis')
     parser.add_argument('--feature', '-f', type=int, required=True,
-                        help='0: template example; 1: time to closure; 2: contributor profile')
+                        help='0: template example; 1: time to closure; 2: contributor profile; 3: time to first response')
     parser.add_argument('--user', '-u', help='GitHub username for feature 2')
     parser.add_argument('--label', '-l')
     parser.add_argument('--output-dir', default=None,
@@ -29,9 +29,15 @@ def main():
             ContributorProfileAnalysis().run()
         except (OSError, ValueError, TypeError, KeyError) as error:
             parser.exit(1, f'Unable to run analysis: {error}\nCheck the dataset path and JSON format.\n')
+    elif args.feature == 3:
+        from response_time_analysis import ResponseTimeAnalysis
+        try:
+            ResponseTimeAnalysis().run()
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            parser.exit(1, f'Unable to run analysis: {error}\nCheck the dataset path and JSON format.\n')
     else:
         parser.error('Available features: 0 (template example), 1 (time to closure), '
-                     '2 (contributor profile). Feature 3 awaits team integration.')
+                     '2 (contributor profile), 3 (time to first response).')
 
 
 if __name__ == '__main__':
