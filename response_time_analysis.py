@@ -161,25 +161,31 @@ def save_dependency_chart(rows, output, show=False):
                 ax.annotate(f'{value:.1f} h', (year, value), textcoords='offset points',
                             xytext=(0, 9), ha='center', fontsize=9, color='#c0392b',
                             bbox=dict(boxstyle='round,pad=0.15', fc='white', ec='none', alpha=.85))
-        ax.set_yscale('log')
         ax.set_xticks(years)
         ax.set_xticklabels([f"{r['year']}\n{r['top_responder']} "
                             f"({r['top_responder_share_percent']:.0f}%)" for r in rows], fontsize=9)
-        lowest = min(v for v in all_replies + without_top if v is not None and v > 0)
-        highest = max(v for v in all_replies + without_top if v is not None)
-        ax.set_ylim(lowest / 2.5, highest * 2.5)
-        ticks = [t for t in (0.5, 1, 2, 5, 10, 24, 48, 100, 200, 500, 1000, 2000)
-                 if lowest / 2.5 <= t <= highest * 2.5]
-        ax.set_yticks(ticks)
-        ax.set_yticklabels([f'{t:g} h' for t in ticks])
-        ax.minorticks_off()
+        plotted = [v for v in all_replies + without_top if v is not None]
+        # A log scale cannot show zero (a reply at the exact moment the issue
+        # was opened), so fall back to a normal scale whenever a zero is present.
+        use_log = all(v > 0 for v in plotted)
+        if use_log:
+            ax.set_yscale('log')
+            lowest, highest = min(plotted), max(plotted)
+            ax.set_ylim(lowest / 2.5, highest * 2.5)
+            ticks = [t for t in (0.5, 1, 2, 5, 10, 24, 48, 100, 200, 500, 1000, 2000)
+                     if lowest / 2.5 <= t <= highest * 2.5]
+            ax.set_yticks(ticks)
+            ax.set_yticklabels([f'{t:g} h' for t in ticks])
+            ax.minorticks_off()
+        else:
+            ax.set_ylim(0, max(1, max(plotted)) * 1.3)
         ax.legend(loc='upper right')
     else:
         ax.text(.5, .5, 'No answered issues to compare', ha='center', va='center',
                 transform=ax.transAxes)
     ax.set_xlabel("Year the issue was created, with that year's top first responder "
                   '(share of first replies)')
-    ax.set_ylabel('Median hours to first response (log scale)')
+    ax.set_ylabel('Median hours to first response' + (' (log scale)' if ax.get_yscale() == 'log' else ''))
     ax.set_title('How much does the response time depend on one person?')
     ax.yaxis.grid(True, which='major', alpha=.2)
     ax.set_axisbelow(True)

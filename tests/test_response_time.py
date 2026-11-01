@@ -107,6 +107,23 @@ class CommandLineTests(unittest.TestCase):
                 self.assertIn('<svg', (folder / 'out' / f'{chart}.svg').read_text())
             return data, proc.stdout
 
+    def test_zero_hour_response_does_not_crash_charts(self):
+        # A reply at the exact moment the issue was opened gives a 0-hour wait,
+        # which a log-scale chart cannot show. The run must still finish.
+        records = [dict(state='open', creator='a', created_date='2024-01-01T00:00:00Z',
+                        events=[comment('2024-01-01T00:00:00Z', 'b')])]
+        data, _ = self.run_module(records)
+        self.assertEqual(data['years'][0]['median_hours'], 0)
+        self.assertIsNone(data['years'][0]['median_hours_without_top'])
+
+    def test_mixed_zero_and_positive_waits(self):
+        records = [dict(state='open', creator='a', created_date=f'{year}-01-01T00:00:00Z',
+                        events=[comment(f'{year}-01-01T0{hour}:00:00Z', 'b'),
+                                comment(f'{year}-01-01T05:00:00Z', 'c')])
+                   for year, hour in ((2023, 0), (2024, 2))]
+        data, _ = self.run_module(records)
+        self.assertEqual([r['median_hours'] for r in data['years']], [0, 2])
+
     def test_fixture_outputs(self):
         records = [dict(state='open', creator='a', created_date='2024-01-01T00:00:00Z',
                         events=[comment('2024-01-01T05:00:00Z', 'b')]),
@@ -119,6 +136,63 @@ class CommandLineTests(unittest.TestCase):
     def test_empty_dataset_does_not_crash(self):
         data, _ = self.run_module([])
         self.assertEqual(data['years'], [])
+
+
+class RunInProcessTests(unittest.TestCase):
+    """Run ResponseTimeAnalysis.run() in this process so coverage tools can
+    measure the report and chart code. Loading is replaced with fixed issues."""
+
+    CHARTS = ('first_response_by_year', 'first_response_without_top_responder')
+
+    def run_analysis(self, issues):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest import mock
+        import response_time_analysis
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary) / 'out'
+            env = {'output_dir': str(out), 'MPLBACKEND': 'Agg', 'show': 'json:false'}
+            stdout = StringIO()
+            with mock.patch.dict(os.environ, env), \
+                    mock.patch.object(response_time_analysis, 'DataLoader') as loader, \
+                    redirect_stdout(stdout):
+                loader.return_value.get_issues.return_value = issues
+                result = response_time_analysis.ResponseTimeAnalysis().run()
+            files = sorted(p.name for p in out.iterdir())
+            for chart in self.CHARTS:
+                self.assertTrue((out / f'{chart}.png').read_bytes().startswith(b'\x89PNG'))
+            saved = json.loads((out / 'summary.json').read_text())
+        return result, saved, stdout.getvalue(), files
+
+    def test_multi_year_report_and_files(self):
+        issues = [issue(created='2023-01-01T00:00:00Z',
+                        events=[comment('2023-01-01T02:00:00Z', 'fast'),
+                                comment('2023-01-01T08:00:00Z', 'slow')]),
+                  issue(created='2024-01-01T00:00:00Z',
+                        events=[comment('2024-01-01T01:00:00Z', 'fast')]),
+                  issue(created='2024-06-01T00:00:00Z')]
+        result, saved, stdout, files = self.run_analysis(issues)
+        self.assertEqual(saved['years'], result['years'])
+        self.assertEqual([r['median_hours'] for r in result['years']], [2, 1])
+        self.assertIn('Finding: median first response went from 2.0 h in 2023 to 1.0 h in 2024', stdout)
+        self.assertIn('fast: 2', stdout)
+        self.assertEqual(files, sorted(['first_response_by_year.csv', 'summary.json'] +
+                                       [f'{c}.{e}' for c in self.CHARTS for e in ('png', 'svg')]))
+
+    def test_year_with_no_replies_at_all(self):
+        result, _, stdout, _ = self.run_analysis([issue(), issue()])
+        self.assertIsNone(result['years'][0]['median_hours'])
+        self.assertIn('N/A', stdout)
+
+    def test_zero_hour_wait_uses_normal_scale(self):
+        result, _, _, _ = self.run_analysis([issue(events=[comment('2024-01-01T00:00:00Z')])])
+        self.assertEqual(result['years'][0]['median_hours'], 0)
+
+    def test_no_usable_issues(self):
+        result, _, stdout, _ = self.run_analysis([issue(created=None)])
+        self.assertEqual(result['years'], [])
+        self.assertIn('excluded: 1 missing creation date', stdout)
+        self.assertNotIn('Finding:', stdout)
 
 
 if __name__ == '__main__':
